@@ -60,6 +60,7 @@ Linux (Debian or Ubuntu; elsewhere, install the packages listed in
 `scripts/setup.sh` yourself):
 
 ```sh
+git clone https://github.com/zero11-0203/nandfs && cd nandfs
 scripts/setup.sh        # installs yosys, iverilog, libfuse3 etc. and builds
 scripts/play.sh         # Pong: keys 1 and q move your paddle, Esc quits
 ```
