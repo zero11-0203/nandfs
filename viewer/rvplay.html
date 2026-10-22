@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DOOM on folders</title>
+<style>
+  :root { --bg: #111; --fg: #ddd; --dim: #888; --line: #333; --on: #c33; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.4 ui-monospace, Menlo, monospace; }
+  main { max-width: 660px; margin: 0 auto; padding: 16px; }
+  canvas { width: 100%; image-rendering: pixelated; background: #000;
+           border: 1px solid var(--line); display: block; }
+  #status { color: var(--dim); margin: 8px 0; min-height: 3em; }
+  #keys { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { background: #222; color: var(--fg); border: 1px solid var(--line);
+           padding: 6px 8px; font: inherit; cursor: pointer; border-radius: 4px; }
+  button.on { background: var(--on); border-color: var(--on); color: #fff; }
+  p { color: var(--dim); }
+</style>
+</head>
+<body>
+<main>
+  <canvas id="screen" width="320" height="200"></canvas>
+  <div id="status">connecting…</div>
+  <div id="keys"></div>
+  <p>Keys: arrows move and turn, Ctrl or F fires, Space or E opens doors,
+  Shift runs, &lt; &gt; strafe, Tab map, Esc menu, Enter and Y answer it.
+  A tapped key stays down until two frames later. The buttons latch: click
+  once to hold a key down, again to let go. Each frame is computed by about
+  23,000 NAND gates stored as folders and takes two or three minutes.</p>
+</main>
+<script>
+const KEYBOARD = {
+  ArrowUp: 0, ArrowDown: 1, ArrowLeft: 2, ArrowRight: 3,
+  ControlLeft: 4, ControlRight: 4, KeyF: 4, Space: 5, KeyE: 5,
+  ShiftLeft: 6, ShiftRight: 6, Enter: 7, Escape: 8, KeyY: 9,
+  Comma: 10, Period: 11, Tab: 12,
+};
+const ctx = document.getElementById("screen").getContext("2d");
+const img = ctx.createImageData(320, 200);
+const statusEl = document.getElementById("status");
+const keysEl = document.getElementById("keys");
+let have = -1, latched = new Set(), buttons = [];
+
+function send(bit, down) {
+  fetch(`/key?bit=${bit}&down=${down ? 1 : 0}`, { method: "POST" }).catch(() => {});
+}
+
+addEventListener("keydown", e => {
+  if (!(e.code in KEYBOARD)) return;
+  e.preventDefault();
+  if (!e.repeat) send(KEYBOARD[e.code], true);
+});
+addEventListener("keyup", e => {
+  if (!(e.code in KEYBOARD)) return;
+  e.preventDefault();
+  if (!latched.has(KEYBOARD[e.code])) send(KEYBOARD[e.code], false);
+});
+
+async function pollFrame() {
+  try {
+    const r = await fetch(`/frame?have=${have}`);
+    if (r.status === 200) {
+      const b = new Uint8Array(await r.arrayBuffer());
+      have = b[0] | b[1] << 8 | b[2] << 16 | b[3] << 24;
+      const pal = b.subarray(4, 1028), fb = b.subarray(1028);
+      for (let i = 0; i < fb.length; i++) {
+        const p = fb[i] * 4;
+        img.data[4 * i] = pal[p + 2];
+        img.data[4 * i + 1] = pal[p + 1];
+        img.data[4 * i + 2] = pal[p];
+        img.data[4 * i + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+  } catch (e) {}
+  setTimeout(pollFrame, 1000);
+}
+
+function fmt(s) {
+  s = Math.round(s);
+  return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
+}
+
+async function pollStatus() {
+  try {
+    const s = await (await fetch("/status")).json();
+    if (!buttons.length) {
+      s.keys.forEach((name, bit) => {
+        const b = document.createElement("button");
+        b.textContent = name;
+        b.onclick = () => {
+          if (latched.has(bit)) latched.delete(bit); else latched.add(bit);
+          send(bit, latched.has(bit));
+        };
+        keysEl.appendChild(b);
+        buttons.push(b);
+      });
+    }
+    buttons.forEach((b, bit) => b.classList.toggle("on", (s.pins >> bit & 1) === 1));
+    const waiting = s.frame === 0 ? "booting (loading the WAD takes about 15 minutes)"
+                                  : `working on frame ${s.frame + 1} for ${fmt(s.since)}`;
+    const avg = s.avg == null ? "" :
+      `Average per frame: ${fmt(s.avg)} (last 10: ${fmt(s.avg10)}). `;
+    statusEl.textContent = `frame ${s.frame} — ${waiting}. ${avg}` +
+      `${s.instret.toLocaleString()} instructions so far, ` +
+      `${Math.round(s.rate).toLocaleString()} clock ticks/s.`;
+  } catch (e) {
+    statusEl.textContent = "not connected to the runner";
+  }
+  setTimeout(pollStatus, 1000);
+}
+
+pollFrame();
+pollStatus();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+build/
+fs/bin/
+*.o
+__pycache__/
+.DS_Store

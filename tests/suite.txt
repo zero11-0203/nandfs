@@ -1,0 +1,16 @@
+# Programs every machine must run identically to tools/chip8ref.py.
+# path (relative to the repository)    slots   [ADDR=BYTE pokes]
+roms/tests/alu.asm                      1500
+roms/tests/draw.asm                     1500
+roms/tests/flow.asm                     1500
+roms/tests/keys.asm                     1500
+roms/tests/mem.asm                      1500
+roms/tests/timers.asm                   1500
+build/roms/1-chip8-logo.ch8             600
+build/roms/2-ibm-logo.ch8               600
+build/roms/3-corax+.ch8                 2500
+build/roms/4-flags.ch8                  4000
+build/roms/5-quirks.ch8                 8000    0x1ff=1
+roms/pong.asm                           3000
+build/games/dinorun.ch8                 3000
+build/games/br8kout.ch8                 3000
