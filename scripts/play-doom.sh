@@ -1,8 +1,8 @@
 #!/bin/sh
 # play-doom.sh [--resume]: play DOOM on the RV32IM folder computer in a web
-# browser (http://localhost:8035). Starts in E1M1; a frame takes about a
-# minute. Ctrl-C saves the machine; --resume continues from the save, which
-# also skips the 15-minute boot.
+# browser (http://localhost:8035). Starts in E1M1; a frame takes two or
+# three minutes. Ctrl-C saves the machine; --resume continues from the save,
+# which also skips the boot.
 # Build first: scripts/fetch-doom.sh && scripts/build-rv32.sh
 set -eu
 SRC=$(cd "$(dirname "$0")/.." && pwd)

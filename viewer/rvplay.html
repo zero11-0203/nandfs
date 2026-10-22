@@ -99,7 +99,7 @@ async function pollStatus() {
       });
     }
     buttons.forEach((b, bit) => b.classList.toggle("on", (s.pins >> bit & 1) === 1));
-    const waiting = s.frame === 0 ? "booting (loading the WAD takes about 15 minutes)"
+    const waiting = s.frame === 0 ? "booting (reading the WAD takes a while)"
                                   : `working on frame ${s.frame + 1} for ${fmt(s.since)}`;
     const avg = s.avg == null ? "" :
       `Average per frame: ${fmt(s.avg)} (last 10: ${fmt(s.avg10)}). `;
